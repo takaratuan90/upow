@@ -5,7 +5,7 @@ import asyncio
 import logging
 import argparse
 import os
-import base58
+import torch
 
 
 from training.train_and_contribute import train_and_contribute
@@ -146,27 +146,6 @@ def ensure_directory_exists(directory_path):
         os.makedirs(directory_path)
 
 
-def is_valid_address(address: str) -> bool:
-    try:
-        _ = bytes.fromhex(address)
-        return len(address) == 128
-    except ValueError:
-        try:
-            decoded_bytes = base58.b58decode(address)
-            if len(decoded_bytes) != 33:
-                return False
-            specifier = decoded_bytes[0]
-            if specifier not in [42, 43]:
-                return False
-            return True
-        except ValueError:
-
-            return False
-    except Exception as e:
-        print(f"Error validating address: {e}")
-        return False
-
-
 async def start_server(find_gradient, download_zip):
     logging.info("Starting Miner...")
     try:
@@ -191,20 +170,12 @@ try:
     clear_directory("./job/")
     args = parse_args()
 
-    if not is_valid_address(args.WALLET_ADDRESS):
-        logging.error(
-            "Invalid wallet address provided. Please provide a valid address."
-        )
-        raise ValueError(
-            "Invalid wallet address provided. Please provide a valid address."
-        )
-    else:
-        # Override config values with command-line arguments
-        config.MINER_POOL_IP = args.MINER_POOL_IP
-        config.MINER_POOL_PORT = args.MINER_POOL_PORT
-        config.WALLET_ADDRESS = args.WALLET_ADDRESS
-        asyncio.get_event_loop().run_until_complete(
-            start_server(find_gradient, download_zip)
-        )
+    # Override config values with command-line arguments
+    config.MINER_POOL_IP = args.MINER_POOL_IP
+    config.MINER_POOL_PORT = args.MINER_POOL_PORT
+    config.WALLET_ADDRESS = args.WALLET_ADDRESS
+    asyncio.get_event_loop().run_until_complete(
+        start_server(find_gradient, download_zip)
+    )
 except KeyboardInterrupt:
     logging.info("Miner shutdown process complete.")
